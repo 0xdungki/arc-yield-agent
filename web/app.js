@@ -11,10 +11,12 @@ const ARC = {
 
 const CONTRACTS = {
   mockUsdc: "0xfd483B685d9f291606b9f70511E13436c091274E",
+  // StreamingYieldVault contracts (real on-chain reward streaming)
+  // Deployed May 16, 2026 — 14-day reward periods, funded from deployer pool
   vaults: [
-    "0xC2776af10e1721655747508941475C058Eb12556",
-    "0x36E5d19996df30A8c3E31c7Adaa069dDC522276D",
-    "0x2e02C3C3F00A10F0f1CF2E511a97F7670365002b",
+    "0xd75451A8934704e3229692Cb04D42C494Dfc87C7", // Cash Reserve   (7 USDC pool)
+    "0x63Ec96081521DB57ADce4870B5a478b2c4dC726b", // Lending Markets (14 USDC pool)
+    "0xc9a089B6D0327d0bFA0429156014F6DD209d199C", // Real-World Assets (21 USDC pool)
   ],
 };
 
@@ -32,8 +34,15 @@ const vaultAbi = [
   "function getAPY() view returns (uint256)",
   "function asset() view returns (address)",
   "function balanceOf(address) view returns (uint256)",
+  "function totalSupply() view returns (uint256)",
+  "function rewardRate() view returns (uint256)",
+  "function periodFinish() view returns (uint256)",
+  "function rewardsDuration() view returns (uint256)",
+  "function getTotalRewardsRemaining() view returns (uint256)",
+  "function earned(address) view returns (uint256)",
   "function deposit(uint256)",
   "function withdraw(uint256)",
+  "function claim()",
 ];
 
 const $ = (id) => document.getElementById(id);
@@ -164,24 +173,57 @@ async function connect() {
 /* ============================================================
    Data load
    ============================================================ */
+const SECONDS_PER_YEAR = 365n * 24n * 60n * 60n;
+const BPS_DENOMINATOR = 10000n;
+
 async function loadVaults(provider, address) {
   const rows = [];
   for (const vaultAddress of CONTRACTS.vaults) {
     try {
       const vault = new ethers.Contract(vaultAddress, vaultAbi, provider);
-      const [name, label, apyBps, shares, asset] = await Promise.all([
+      const [name, label, apyBps, shares, asset, totalSupply, rewardRate, periodFinish, rewardsRemaining, earned] = await Promise.all([
         vault.name(),
         vault.strategyLabel(),
         vault.getAPY(),
         vault.balanceOf(address),
         vault.asset(),
+        vault.totalSupply(),
+        vault.rewardRate(),
+        vault.periodFinish(),
+        vault.getTotalRewardsRemaining(),
+        address && address !== ethers.ZeroAddress ? vault.earned(address) : Promise.resolve(0n),
       ]);
-      rows.push({ address: vaultAddress, name, label, apyBps: Number(apyBps), shares, asset });
+      
+      // Calculate projected APY for a hypothetical 100 USDC deposit
+      // (helps users see what APY they'd actually get)
+      const projectedTvl = totalSupply > 0n ? totalSupply : 100_000_000n; // 100 USDC in 6-decimal units
+      const now = BigInt(Math.floor(Date.now() / 1000));
+      const isActive = periodFinish > now && rewardRate > 0n;
+      const projectedApyBps = isActive
+        ? (rewardRate * SECONDS_PER_YEAR * BPS_DENOMINATOR) / projectedTvl
+        : 0n;
+      
+      rows.push({
+        address: vaultAddress,
+        name,
+        label,
+        apyBps: Number(apyBps),
+        projectedApyBps: Number(projectedApyBps),
+        shares,
+        asset,
+        totalSupply,
+        rewardRate,
+        periodFinish: Number(periodFinish),
+        rewardsRemaining,
+        earned,
+        isActive,
+      });
     } catch (err) {
       logLine(`Vault ${short(vaultAddress)} read error: ${err.shortMessage || err.message}`);
     }
   }
-  rows.sort((a, b) => b.apyBps - a.apyBps);
+  // Sort by projected APY (more useful than current APY when TVL is low)
+  rows.sort((a, b) => b.projectedApyBps - a.projectedApyBps);
   return rows;
 }
 
@@ -190,22 +232,34 @@ function renderVaults(vaults) {
     ui.vaultList.innerHTML = `<p class="muted">No vaults available.</p>`;
     return;
   }
-  const maxApy = vaults[0]?.apyBps || 1;
+  const maxApy = vaults[0]?.projectedApyBps || 1;
   ui.vaultList.innerHTML = vaults.map((v, i) => {
-    const apyPct = (v.apyBps / 100).toFixed(1);
-    const fillPct = Math.max(8, Math.round((v.apyBps / maxApy) * 100));
+    // Show projected APY (real-time calculation based on rewardRate)
+    const apyPct = (v.projectedApyBps / 100).toFixed(1);
+    const fillPct = Math.max(8, Math.round((v.projectedApyBps / maxApy) * 100));
+    
+    // Reward period info
+    const finishDate = v.periodFinish > 0
+      ? new Date(v.periodFinish * 1000).toLocaleDateString([], { month: "short", day: "numeric" })
+      : "—";
+    const earnedAmount = v.earned > 0n ? `${fmtToken(v.earned)} pending` : "";
+    
     return `
       <article class="vault ${i === 0 ? "best" : ""}">
         ${i === 0 ? `<span class="vault-tag">★ Allocator pick</span>` : `<span class="vault-tag">Strategy ${i + 1}</span>`}
         <div>
           <h3 class="vault-name">${v.name}</h3>
-          <p class="vault-strategy">${v.label}</p>
+          <p class="vault-strategy">${v.label}${v.isActive ? "" : " · Pre-launch"}</p>
         </div>
-        <p class="vault-rate">${apyPct}<small>% APY</small></p>
+        <p class="vault-rate">${apyPct}<small>% APY${v.totalSupply === 0n ? " (projected)" : ""}</small></p>
         <div class="vault-bar"><div class="vault-bar-fill" style="width:${fillPct}%"></div></div>
         <div class="vault-shares-row">
           <span>Your shares</span>
-          <strong>${fmtToken(v.shares)}</strong>
+          <strong>${fmtToken(v.shares)}${earnedAmount ? ` · ${earnedAmount}` : ""}</strong>
+        </div>
+        <div class="vault-shares-row" style="margin-top:6px;font-size:11px;opacity:0.7">
+          <span>Rewards until</span>
+          <strong>${finishDate}</strong>
         </div>
         <div class="vault-addr">
           <code>${v.address}</code>
