@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#F5F1EA" />
+
+    <title>Arc Yield Agent — Stablecoin Strategy Allocator</title>
+    <meta name="description" content="An autonomous stablecoin allocator. Scans on-chain vaults on Arc Testnet, selects optimal yield, rebalances from a single signature. Built by @0xdungki." />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Arc Yield Agent — Stablecoin Strategy Allocator" />
+    <meta property="og:description" content="Autonomous on-chain yield allocation across stablecoin vaults. Live on Arc Testnet." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="./og-image.svg" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@0xdungki" />
+    <meta name="twitter:creator" content="@0xdungki" />
+    <meta name="twitter:title" content="Arc Yield Agent" />
+    <meta name="twitter:description" content="Autonomous stablecoin yield allocator on Arc Testnet." />
+    <meta name="twitter:image" content="./og-image.svg" />
+
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <!-- Background paper texture -->
+    <div class="paper-bg" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="container topbar-row">
+        <a class="brand" href="/" aria-label="Arc Yield Agent">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 18 L12 4 L21 18" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="11" r="1.4" fill="currentColor"/></svg>
+          </span>
+          <span class="brand-name">Arc Yield Agent</span>
+        </a>
+
+        <nav class="topnav">
+          <a href="#strategies">Strategies</a>
+          <a href="#portfolio">Portfolio</a>
+          <a href="#activity">Activity</a>
+          <a href="https://twitter.com/0xdungki" target="_blank" rel="noreferrer">@0xdungki</a>
+        </nav>
+
+        <div class="topbar-status">
+          <span class="dot" id="netDot" aria-hidden="true"></span>
+          <span class="pill-thin" id="networkPill">Reading Arc Testnet…</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="container main">
+      <!-- Hero -->
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Arc Testnet · Stablecoin Allocator</p>
+          <h1 class="display">
+            Quiet capital,<br/>
+            <em>working continuously.</em>
+          </h1>
+          <p class="lead">
+            An autonomous agent that scans on-chain vaults, selects the optimal yield, and rebalances stablecoin positions on your behalf — with a single signature.
+          </p>
+          <div class="hero-actions">
+            <button id="connectBtn" class="btn btn-primary">
+              <span class="btn-label">Connect wallet</span>
+              <span class="btn-arrow" aria-hidden="true">→</span>
+            </button>
+            <button id="switchBtn" class="btn btn-ghost">Add Arc network</button>
+          </div>
+          <p class="muted small">
+            <span id="walletAddress">No wallet connected · viewing in read-only mode</span>
+          </p>
+        </div>
+
+        <aside class="hero-card" aria-label="Allocator recommendation">
+          <p class="card-eyebrow">Allocator recommendation</p>
+          <h2 class="card-title" id="recommendation">Loading vaults…</h2>
+          <div class="rec-meta">
+            <div>
+              <span class="muted small">Best APY</span>
+              <strong class="figure" id="bestApy">—</strong>
+            </div>
+            <div>
+              <span class="muted small">Active strategies</span>
+              <strong class="figure" id="activeStrategies">3</strong>
+            </div>
+          </div>
+          <p class="rec-note" id="recNote">
+            The agent reviews every vault each refresh and recommends the highest risk-adjusted return available on chain.
+          </p>
+        </aside>
+      </section>
+
+      <!-- Stat row -->
+      <section class="stat-row" id="portfolio">
+        <article class="stat">
+          <p class="stat-label">Idle balance</p>
+          <p class="stat-value" id="idleUsdc">—</p>
+          <p class="stat-sub muted">MockUSDC, ready to allocate</p>
+        </article>
+        <article class="stat">
+          <p class="stat-label">Vault shares</p>
+          <p class="stat-value" id="totalShares">—</p>
+          <p class="stat-sub muted">Aggregated across strategies</p>
+        </article>
+        <article class="stat">
+          <p class="stat-label">Network gas</p>
+          <p class="stat-value" id="nativeGas">—</p>
+          <p class="stat-sub muted">USDC native on Arc Testnet</p>
+        </article>
+        <article class="stat actions-stat">
+          <p class="stat-label">Quick actions</p>
+          <div class="stat-actions">
+            <button id="mintBtn" class="btn btn-soft">Mint 1,000 mUSDC</button>
+            <button id="rebalanceBtn" class="btn btn-primary btn-small">Allocate idle</button>
+            <button id="refreshBtn" class="btn btn-ghost btn-small">Refresh</button>
+          </div>
+        </article>
+      </section>
+
+      <!-- Vaults -->
+      <section class="vaults" id="strategies">
+        <header class="section-head">
+          <div>
+            <p class="eyebrow">Strategies on chain</p>
+            <h2 class="section-title">Three vaults, one optimal target.</h2>
+          </div>
+          <p class="section-note muted">
+            Live data from Arc Testnet · sorted by published APY
+          </p>
+        </header>
+
+        <div id="vaultList" class="vault-grid"></div>
+      </section>
+
+      <!-- Activity + contracts -->
+      <section class="lower-grid" id="activity">
+        <article class="paper-card">
+          <p class="eyebrow">Session activity</p>
+          <h3 class="card-h3">Agent log</h3>
+          <pre id="log" class="log">Ready.</pre>
+        </article>
+
+        <article class="paper-card contracts-card">
+          <p class="eyebrow">On-chain references</p>
+          <h3 class="card-h3">Verified contracts</h3>
+          <div class="contracts" id="contracts"></div>
+          <a class="btn btn-ghost btn-small" href="https://testnet.arcscan.app/address/0x86563098801D6Fc60a4250911d2037CEc2172067" target="_blank" rel="noreferrer">
+            View deployer on Arcscan ↗
+          </a>
+        </article>
+      </section>
+
+      <!-- Share -->
+      <section class="share-band">
+        <div class="share-copy">
+          <p class="eyebrow">Built by @0xdungki</p>
+          <h3 class="card-h3">Share if you found this useful.</h3>
+        </div>
+        <div class="share-actions">
+          <a class="btn btn-soft" id="shareBtn" target="_blank" rel="noreferrer">
+            Share on X
+          </a>
+          <a class="btn btn-ghost" href="https://twitter.com/0xdungki" target="_blank" rel="noreferrer">
+            Follow @0xdungki
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-row">
+        <div>
+          <p class="brand-name">Arc Yield Agent</p>
+          <p class="muted small">Stablecoin strategy allocator · Arc Testnet</p>
+        </div>
+        <div class="footer-links">
+          <a href="https://twitter.com/0xdungki" target="_blank" rel="noreferrer">Twitter / X</a>
+          <a href="https://github.com/citterxbt" target="_blank" rel="noreferrer" style="display:none">GitHub</a>
+          <a href="https://testnet.arcscan.app" target="_blank" rel="noreferrer">Arcscan</a>
+          <a href="https://docs.arc.network" target="_blank" rel="noreferrer">Arc Docs</a>
+        </div>
+        <p class="muted small">© 2026 · Built by <a href="https://twitter.com/0xdungki" target="_blank" rel="noreferrer">@0xdungki</a></p>
+      </div>
+    </footer>
+
+    <!-- Toast -->
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

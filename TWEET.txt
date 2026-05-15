@@ -1,0 +1,14 @@
+I built an autonomous yield allocator on @arc 🟫
+
+Arc Yield Agent:
+→ Scans 3 live vaults on Arc Testnet
+→ Recommends optimal APY
+→ Rebalances stablecoins with 1 signature
+
+Editorial luxury UI (no cyberpunk)
+Pure on-chain, no backend
+Contracts verified on Arcscan
+
+Try it: https://arc-yield-agent.vercel.app
+
+#ArcArchitects
