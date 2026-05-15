@@ -1,15 +1,10 @@
-I built a real-yield stablecoin allocator on @arc 🟫
+just shipped Arc Yield Agent on @arc testnet 🟫
 
-Arc Yield Agent:
-→ 3 vaults streaming USDC rewards live on Arc Testnet
-→ Synthetix-style rewards (same pattern as Sushi/Aave)
-→ APY calculated live from on-chain rewardRate
-→ One-click deposit, real-time accrual
+3 vaults streaming USDC rewards on-chain
+synthetix-style rewards pattern
+APY calculated live from rewardRate
 
-42 USDC sponsor pool, 14-day stream
-Editorial luxury UI (no cyberpunk)
-Source: github.com/0xdungki/arc-yield-agent
+42 USDC pool, 14-day stream
 
-Try it: https://arc-yield-agent.vercel.app
-
-#ArcArchitects
+source: github.com/0xdungki/arc-yield-agent
+demo: arc-yield-agent.vercel.app

@@ -42,7 +42,7 @@ When TVL is low, APY shows projected rate at 100 USDC. As more users deposit, AP
 
 - **Contracts:** Hardhat + OpenZeppelin (StreamingYieldVault, MockUSDC)
 - **Frontend:** Vanilla JS + ethers.js (no framework bloat)
-- **Design:** Editorial luxury aesthetic (anti-cyberpunk)
+- **Design:** Warm editorial palette (Fraunces + Inter, ivory + brass)
 - **Deploy:** Vercel static hosting
 - **Bundle:** ~42 KB total (HTML 8.7K + CSS 17K + JS 14K)
 
@@ -63,14 +63,13 @@ All contracts viewable on [Arcscan](https://testnet.arcscan.app).
 
 ## Design Philosophy
 
-Most DeFi UIs default to cyberpunk neon. I went the opposite direction:
+I went with a warm, editorial palette instead of the usual neon DeFi look:
 
 - **Palette:** Warm ivory paper, deep ink, antique brass accents
 - **Typography:** Fraunces serif (editorial) + Inter (body)
 - **Mood:** Quiet wealth, generous whitespace, subtle paper texture
-- **Inspiration:** Private banking, Aesop product pages, Stripe Press
 
-The goal: make yield allocation feel calm and trustworthy, not chaotic.
+Wanted yield allocation to feel calm and trustworthy, not chaotic.
 
 ---
 
